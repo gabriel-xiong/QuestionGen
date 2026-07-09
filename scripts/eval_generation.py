@@ -126,11 +126,11 @@ class HFGenerator:
                                skip_special_tokens=True)
 
 
-def make_generator(spec: str):
+def make_generator(spec: str, temperature: float = 0.0):
     if spec.startswith("mock:"):
         return MockGenerator(spec.split(":", 1)[1])
     if spec.startswith("hf:"):
-        return HFGenerator(spec.split(":", 1)[1])
+        return HFGenerator(spec.split(":", 1)[1], temperature=temperature)
     raise ValueError(f"unknown generator spec: {spec} (use mock:good|mock:bad|hf:<path>)")
 
 
@@ -250,12 +250,16 @@ def main() -> None:
     ap.add_argument("--out", default="data/eval_results.jsonl")
     ap.add_argument("--judge-model")
     ap.add_argument("--mock-judge", action="store_true")
+    ap.add_argument("--temperature", type=float, default=0.0,
+                    help="sampling temp for hf: generators; >0 gives distinct "
+                         "samples per scenario (real N instead of greedy repeats)")
     args = ap.parse_args()
 
     scenarios = [json.loads(l) for l in open(args.scenarios, encoding="utf-8") if l.strip()]
     misc_defs = gen_spec.MISC_DEFS
     judge_client = judge_mod.JudgeClient(args.judge_model, force_mock=args.mock_judge)
-    base, tuned = make_generator(args.base), make_generator(args.tuned)
+    base = make_generator(args.base, args.temperature)
+    tuned = make_generator(args.tuned, args.temperature)
 
     with open(args.out, "w", encoding="utf-8") as fh:
         res_base = run_model("base", base, scenarios, judge_client, misc_defs, fh)
