@@ -138,7 +138,27 @@ def make_generator(spec: str, temperature: float = 0.0):
 
 def _parse_item(raw: str) -> dict | None:
     obj = judge_mod._extract_json(raw)
-    return obj or None
+    if not obj:
+        return None
+    return _normalize_tags(obj)
+
+
+def _normalize_tags(item: dict) -> dict:
+    """Models (esp. the base) emit distractor_tags in varied shapes: a dict
+    {"misconception_id": ...}, a bare string id, or junk. Normalize every value
+    to a dict so scoring never crashes — a non-conforming shape simply scores low."""
+    tags = item.get("distractor_tags")
+    if isinstance(tags, dict):
+        norm = {}
+        for k, v in tags.items():
+            if isinstance(v, dict):
+                norm[k] = v
+            elif isinstance(v, str):
+                norm[k] = {"misconception_id": v}
+            else:
+                norm[k] = {"misconception_id": None}
+        item["distractor_tags"] = norm
+    return item
 
 
 def _spec_adherence(raw: str, item: dict, scenario: dict) -> int:
@@ -157,8 +177,10 @@ def _spec_adherence(raw: str, item: dict, scenario: dict) -> int:
     tags = item.get("distractor_tags")
     if not isinstance(tags, dict) or set(tags) != set(choices) - {correct}:
         return 0
-    used = sorted(t.get("misconception_id") for t in tags.values())
-    if used != sorted(scenario["misconception_ids"]):
+    mids = [t.get("misconception_id") for t in tags.values()]
+    if any(not isinstance(m, str) for m in mids):
+        return 1  # tagged, but ids missing/unusable
+    if sorted(mids) != sorted(scenario["misconception_ids"]):
         return 1  # structurally valid but not the requested misconception set
     stripped = raw.strip()
     pure_json = stripped.startswith("{") and stripped.endswith("}")
