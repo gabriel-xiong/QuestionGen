@@ -38,13 +38,8 @@ topics are scored by an LLM judge that was validated against human labels before
 being trusted. Models are compared on held-out prompts the model never trained on.
 
 That validation mattered. On a calibration set seeded with deliberately
-mislabeled distractors, a cheaper judge missed every planted error while gpt-4o
-matched the human labels exactly, so gpt-4o was chosen as the judge:
-
-| Judge | Planted errors caught | Agreement with human |
-|---|---|---|
-| gpt-4o-mini | 0 / 15 | 50% |
-| gpt-4o | **15 / 15** | **100%** |
+mislabeled distractors, a cheaper judge (gpt-4o-mini) missed every planted error
+while gpt-4o matched the human labels exactly, so gpt-4o was chosen as the judge.
 
 ## Results (base vs. fine-tuned, 0 to 2)
 | Dimension | Base Qwen3-1.7B | Fine-tuned |
