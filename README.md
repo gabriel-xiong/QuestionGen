@@ -1,14 +1,14 @@
-# QuestionGen — AI-generated AP Biology questions with meaningful wrong answers
+# QuestionGen: AI-generated AP Biology questions with meaningful wrong answers
 
 A fine-tuned small language model that writes AP Biology multiple-choice
 questions where **every wrong answer reflects a specific, well-known student
-misconception** — not a random distractor. The model returns a clean, structured
+misconception**, not a random distractor. The model returns a clean, structured
 JSON item (question, four options, answer key, and the misconception behind each
 wrong choice), which is exactly what an adaptive learning or test-prep tool needs
 to diagnose *why* a student got something wrong.
 
-The interesting result: a **1.7B-parameter model** — small enough to run locally
-and for free — was trained to do this reliably and performs on par with a much
+The interesting result: a **1.7B-parameter model**, small enough to run locally
+and for free, was trained to do this reliably and performs on par with a much
 larger frontier model on the task, at a tiny fraction of the size and cost.
 
 ## Highlights
@@ -19,25 +19,34 @@ larger frontier model on the task, at a tiny fraction of the size and cost.
 - **Large, measured gains over the base model** on every dimension.
 - **A data-iteration case study:** diagnosed a generalization failure and fixed it
   by improving the *data* (adding topic coverage), not the training settings.
-- Trained with **QLoRA (Unsloth)** on a single GPU; shipped with a live demo.
+- Trained with **QLoRA (Unsloth)** on a single GPU; packaged with a Gradio demo.
 
 ## How it's evaluated (four dimensions)
-Every generated question is scored 0–2 on:
+Every generated question is scored 0 to 2 on:
 
-1. **Spec adherence** — is the output a single, valid, well-formed JSON item
+1. **Spec adherence**: is the output a single, valid, well-formed JSON item
    (four distinct options, exactly one correct answer, every wrong option tagged)?
-2. **Distractor mapping** — does each wrong answer genuinely embody the
+2. **Distractor mapping**: does each wrong answer genuinely embody the
    misconception it's labeled with? *(the core metric)*
-3. **Task quality** — is the biology correct: right answer keyed, distractors
-   actually wrong and plausible?
-4. **Consistency** — does the model behave reliably across similar prompts?
+3. **Task quality**: is the biology correct, with the right answer keyed and the
+   distractors actually wrong and plausible?
+4. **Consistency**: does the model behave reliably across similar prompts?
 
 The eval was written *before* any training. **Genetics is scored objectively** by
 recomputing the underlying Punnett cross (no subjective judgment), and conceptual
 topics are scored by an LLM judge that was validated against human labels before
 being trusted. Models are compared on held-out prompts the model never trained on.
 
-## Results (base vs. fine-tuned, 0–2)
+That validation mattered. On a calibration set seeded with deliberately
+mislabeled distractors, a cheaper judge missed every planted error while gpt-4o
+matched the human labels exactly, so gpt-4o was chosen as the judge:
+
+| Judge | Planted errors caught | Agreement with human |
+|---|---|---|
+| gpt-4o-mini | 0 / 15 | 50% |
+| gpt-4o | **15 / 15** | **100%** |
+
+## Results (base vs. fine-tuned, 0 to 2)
 | Dimension | Base Qwen3-1.7B | Fine-tuned |
 |---|---|---|
 | Spec adherence | 1.80 | **2.00** |
@@ -45,15 +54,15 @@ being trusted. Models are compared on held-out prompts the model never trained o
 | Task quality | 1.71 | **2.00** |
 | Consistency (fully-correct rate) | 15% | **80%** |
 
-- **Genetics answer correctness (objective): 0/40 → 40/40.** The base model never
+- **Genetics answer correctness (objective): 0/40 to 40/40.** The base model never
   produces a valid, correctly-solved cross; the fine-tuned model does it every time.
 - On a **topic held out of training entirely**, fine-tuning still improved
-  misconception mapping over the base model — and improving the dataset's topic
+  misconception mapping over the base model, and improving the dataset's topic
   coverage is what made that generalization possible.
 
 ## How it works
-Good exam distractors are *engineered*, not scraped — real question banks are full
-of filler wrong answers that don't correspond to any coherent misconception. So the
+Good exam distractors are *engineered*, not scraped. Real question banks are full
+of filler wrong answers that don't correspond to any coherent misconception, so the
 training data is generated **by construction**: each misconception is turned into
 an "error operator" that produces the exact wrong answer a student holding that
 belief would choose, which guarantees the label is correct.
@@ -68,13 +77,13 @@ spot-checks for the rest) and split so evaluation always happens on unseen promp
 
 ## Tech stack
 Python · Qwen3-1.7B · QLoRA / LoRA (Unsloth, PEFT) · Hugging Face Transformers &
-Hub · Gradio (demo) · LLM-as-judge + programmatic scoring for evaluation.
+Hub · Gradio · LLM-as-judge plus programmatic scoring for evaluation.
 
 ## Quickstart
-- **Full pipeline** (train → evaluate): `notebooks/run_all_pipeline.ipynb`
+- **Full pipeline** (train and evaluate): `notebooks/run_all_pipeline.ipynb`
   (open in Colab with a GPU runtime).
 - **Model:** [`gabriel-xiong/apbio-item-generator-qwen3-1.7b-lora`](https://huggingface.co/gabriel-xiong/apbio-item-generator-qwen3-1.7b-lora)
-  on the Hugging Face Hub — load it on top of `Qwen/Qwen3-1.7B` with PEFT.
+  on the Hugging Face Hub. Load it on top of `Qwen/Qwen3-1.7B` with PEFT.
 - **Read more:** [`docs/summary.md`](docs/summary.md) (one-page overview),
   [`docs/brainlift_generator.md`](docs/brainlift_generator.md) (full write-up),
   [`docs/behavior_spec.md`](docs/behavior_spec.md) (the target behavior definition).
