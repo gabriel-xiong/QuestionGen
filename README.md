@@ -15,7 +15,8 @@ larger frontier model on the task, at a tiny fraction of the size and cost.
 - **Purpose-built dataset** of ~2,000 questions across 5 biology topics, generated
   *by construction* so every distractor provably maps to a named misconception.
 - **Evaluation harness built before training**, scoring generations on four
-  dimensions (below), with an objective, recomputable ground truth for genetics.
+  dimensions (below) with programmatic checks plus an LLM judge validated
+  against human labels.
 - **Large, measured gains over the base model** on every dimension.
 - **A data-iteration case study:** diagnosed a generalization failure and fixed it
   by improving the *data* (adding topic coverage), not the training settings.
@@ -32,25 +33,25 @@ Every generated question is scored 0 to 2 on:
    distractors actually wrong and plausible?
 4. **Consistency**: does the model behave reliably across similar prompts?
 
-The eval was written *before* any training. **Genetics is scored objectively** by
-recomputing the underlying Punnett cross (no subjective judgment), and conceptual
-topics are scored by an LLM judge that was validated against human labels before
+The eval was written *before* any training. Outputs are scored with programmatic
+structural checks plus an LLM judge that was validated against human labels before
 being trusted. Models are compared on held-out prompts the model never trained on.
 
 That validation mattered. On a calibration set seeded with deliberately
 mislabeled distractors, a cheaper judge (gpt-4o-mini) missed every planted error
 while gpt-4o matched the human labels exactly, so gpt-4o was chosen as the judge.
 
-## Results (base vs. fine-tuned, 0 to 2)
-| Dimension | Base Qwen3-1.7B | Fine-tuned |
-|---|---|---|
-| Spec adherence | 1.80 | **2.00** |
-| Distractor mapping | 1.05 | **1.80** |
-| Task quality | 1.71 | **2.00** |
-| Consistency (fully-correct rate) | 15% | **80%** |
+## Results (base vs. fine-tuned vs. frontier, 0 to 2)
+| Dimension | Base Qwen3-1.7B | Fine-tuned | GPT-4o (prompted) |
+|---|---|---|---|
+| Spec adherence | 1.80 | **2.00** | 2.00 |
+| Distractor mapping | 1.05 | **1.80** | 1.90 |
+| Task quality | 1.71 | **2.00** | 1.95 |
+| Consistency (fully-correct rate) | 15% | **80%** | 90% |
 
-- **Genetics answer correctness (objective): 0/40 to 40/40.** The base model never
-  produces a valid, correctly-solved cross; the fine-tuned model does it every time.
+The fine-tuned 1.7B model reaches near-parity with prompted GPT-4o on this task,
+at a fraction of the size and cost.
+
 - On a **topic held out of training entirely**, fine-tuning still improved
   misconception mapping over the base model, and improving the dataset's topic
   coverage is what made that generalization possible.
@@ -85,15 +86,38 @@ Good exam distractors are *engineered*, not scraped. Real question banks are ful
 of filler wrong answers that don't correspond to any coherent misconception, so the
 training data is generated **by construction**: each misconception is turned into
 an "error operator" that produces the exact wrong answer a student holding that
-belief would choose, which guarantees the label is correct.
+belief would choose, which guarantees the label is correct. The dataset spans
+five biology topics (cellular respiration, enzymes, membrane transport, evolution,
+and genetics), each item pairing three competing misconceptions, and is validated
+with automated checks and human spot-checks before an unseen split is held out for
+evaluation.
 
-- **Genetics** uses a Punnett-square solver plus error operators, so items are
-  verifiable by recomputation.
-- **Conceptual topics** (cellular respiration, enzymes, membrane transport,
-  evolution) use curated question frames, each pairing three competing misconceptions.
+## A sample training pair
+The model is fine-tuned on pairs of a **request** (topic plus the misconceptions to
+embed) and the **JSON item** it should produce:
 
-The dataset is then validated (independent recomputation for genetics, human
-spot-checks for the rest) and split so evaluation always happens on unseen prompts.
+*Input (abridged):*
+```
+Write one AP Biology multiple-choice item on the topic: enzymes.
+Embed EXACTLY these misconceptions, one per wrong answer choice:
+  - enz_change_equilibrium: enzymes shift the equilibrium / change dG
+  - enz_raise_activation_energy: enzymes increase activation energy
+  - enz_specificity_any_substrate: an enzyme can act on any substrate
+Output a single JSON object (stem, choices A-D, correct, distractor_tags).
+```
+
+*Output:*
+```json
+{"stem": "How does an enzyme increase the rate of a chemical reaction?",
+ "choices": {"A": "It lowers the activation energy required for the reaction to proceed.",
+             "B": "It increases the activation-energy barrier of the reaction.",
+             "C": "It binds and converts any available molecule to force the reaction.",
+             "D": "It shifts the reaction's equilibrium toward the products."},
+ "correct": "A",
+ "distractor_tags": {"B": {"misconception_id": "enz_raise_activation_energy"},
+                     "C": {"misconception_id": "enz_specificity_any_substrate"},
+                     "D": {"misconception_id": "enz_change_equilibrium"}}}
+```
 
 ## Tech stack
 Python · Qwen3-1.7B · QLoRA / LoRA (Unsloth, PEFT) · Hugging Face Transformers &
