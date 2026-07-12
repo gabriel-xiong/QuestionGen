@@ -1,9 +1,5 @@
 # QuestionGen — AI-generated AP Biology questions with meaningful wrong answers
 
-[![Open the live demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/gabriel-xiong/QuestionGen/blob/main/notebooks/try_it.ipynb)
-
-*Try it:* open the notebook above → **Run all** → click the public link it prints.
-
 A fine-tuned small language model that writes AP Biology multiple-choice
 questions where **every wrong answer reflects a specific, well-known student
 misconception** — not a random distractor. The model returns a clean, structured
@@ -75,10 +71,10 @@ Python · Qwen3-1.7B · QLoRA / LoRA (Unsloth, PEFT) · Hugging Face Transformer
 Hub · Gradio (demo) · LLM-as-judge + programmatic scoring for evaluation.
 
 ## Quickstart
-- **Full pipeline** (train → evaluate → demo): `notebooks/run_all_pipeline.ipynb`
+- **Full pipeline** (train → evaluate): `notebooks/run_all_pipeline.ipynb`
   (open in Colab with a GPU runtime).
-- **Demo + deploy only** (model already on the Hub): `notebooks/demo_and_deploy.ipynb`
-  — runs a base-vs-tuned comparison and deploys a free Hugging Face Space.
+- **Model:** [`gabriel-xiong/apbio-item-generator-qwen3-1.7b-lora`](https://huggingface.co/gabriel-xiong/apbio-item-generator-qwen3-1.7b-lora)
+  on the Hugging Face Hub — load it on top of `Qwen/Qwen3-1.7B` with PEFT.
 - **Read more:** [`docs/summary.md`](docs/summary.md) (one-page overview),
   [`docs/brainlift_generator.md`](docs/brainlift_generator.md) (full write-up),
   [`docs/behavior_spec.md`](docs/behavior_spec.md) (the target behavior definition).
