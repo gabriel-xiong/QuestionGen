@@ -8,6 +8,7 @@ QuestionGen fine-tunes a 1.7B-parameter language model to generate AP Biology mu
 
 | | |
 |---|---|
+| **Problem** | Generate biology questions whose wrong answers reveal a specific student misconception—not just a plausible mistake |
 | **Model** | Qwen3-1.7B adapted with QLoRA / LoRA |
 | **Behavioral target** | Valid JSON, four choices, one correct answer, and one requested misconception per distractor |
 | **Dataset** | 2,046 by-construction items across five AP Biology topics |
