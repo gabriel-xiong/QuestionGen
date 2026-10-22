@@ -23,22 +23,31 @@ QuestionGen reverses the data-generation direction: start with a misconception, 
 
 ## System design
 
-```mermaid
-flowchart LR
-    M[Misconception taxonomy] --> G[Topic generators + error operators]
-    G --> V[Deterministic validators]
-    V --> D[2,046-item corpus]
-    D --> S[Train / validation / held-out splits]
-    S --> Q[QLoRA fine-tuning]
-    Q --> T[Qwen3-1.7B adapter]
+### Training path
 
-    P[Held-out behavior requests] --> B[Base model]
-    P --> T
-    P --> F[Prompted GPT-4o comparison]
-    B --> E[Shared evaluation harness]
-    T --> E
-    F --> E
-    E --> R[Schema, mapping, quality, consistency]
+```mermaid
+flowchart TB
+    A["Misconception taxonomy"]
+    A --> B["Topic generators + error operators"]
+    B --> C["Deterministic validators"]
+    C --> D["2,046-item corpus"]
+    D --> E["Train · validation · held-out splits"]
+    E --> F["QLoRA fine-tuning"]
+    F --> G["Qwen3-1.7B adapter"]
+```
+
+### Evaluation path
+
+```mermaid
+flowchart TB
+    A["Held-out behavior requests"]
+    A --> B["Base Qwen3-1.7B"]
+    A --> C["Fine-tuned 1.7B"]
+    A --> D["Prompted GPT-4o"]
+    B --> E["Shared evaluation harness"]
+    C --> E
+    D --> E
+    E --> F["Schema · mapping · quality · consistency"]
 ```
 
 ## Data pipeline
